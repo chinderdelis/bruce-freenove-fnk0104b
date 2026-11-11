@@ -1,0 +1,60 @@
+From c54ebc8244783dbfbf00c37cabddfb4667c51980 Mon Sep 17 00:00:00 2001
+From: chinderdelis <62119203+chinderdelis@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 18:54:08 +0100
+Subject: [PATCH] feat(cli): add battery command
+
+Print battery percentage, charging state and, on boards with an analog battery divider, the raw ADC and scaled battery voltage.
+---
+ src/core/serial_commands/util_commands.cpp | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/serial_commands/util_commands.cpp b/src/core/serial_commands/util_commands.cpp
+index 04391d97..3a994d53 100644
+--- a/src/core/serial_commands/util_commands.cpp
++++ b/src/core/serial_commands/util_commands.cpp
+@@ -1,13 +1,28 @@
+ #include "util_commands.h"
++#include "core/bus_HAL.h"
+ #include "core/main_menu.h"
+ #include "core/sd_functions.h"
+ #include "core/utils.h" // to return optionsJSON
+ #include "core/wifi/webInterface.h"
+ #include "core/wifi/wifi_common.h" //to return MAC addr
+-#include "core/bus_HAL.h"
++#include "hal/power/gauge.h"
+ #include "modules/badusb_ble/ducky_typer.h"
+ #include <globals.h>
+ 
++uint32_t batteryCallback(cmd *c) {
++    int percent = getBattery();
++    String out = "[BAT] " + String(percent) + "% charging=" + String(hal_gauge_is_charging() ? 1 : 0);
++#ifdef ANALOG_BAT_PIN
++#ifndef ANALOG_BAT_MULTIPLIER
++#define ANALOG_BAT_MULTIPLIER 2.0f
++#endif
++    uint32_t adcMv = analogReadMilliVolts(ANALOG_BAT_PIN);
++    out += " adc=" + String(adcMv) + "mV batt~" + String((uint32_t)(adcMv * ANALOG_BAT_MULTIPLIER)) + "mV";
++#endif
++    serialDevice->println(out);
++    return true;
++}
++
+ uint32_t uptimeCallback(cmd *c) {
+     // https://github.com/espressif/arduino-esp32/blob/66c9c0b1a6a36b85d27cdac0fb52098368de1a09/libraries/WebServer/examples/AdvancedWebServer/AdvancedWebServer.ino#L64
+ 
+@@ -199,6 +214,7 @@ uint32_t helpCallback(cmd *c) {
+ #endif
+ 
+     serialDevice->println("\nPower Management:");
++    serialDevice->println("  battery, bat              - Show battery percentage and charging state.");
+     serialDevice->println("  power <off/reboot/sleep>  - General power management.");
+ 
+     serialDevice->println("\nGPIO Commands:");
+@@ -427,6 +443,7 @@ uint32_t loaderCallback(cmd *c) {
+ }
+ 
+ void createUtilCommands(SimpleCLI *cli) {
++    cli->addCommand("battery,bat", batteryCallback);
+     cli->addCommand("uptime", uptimeCallback);
+     cli->addCommand("date", dateCallback);
+     cli->addCommand("i2c", i2cCallback);

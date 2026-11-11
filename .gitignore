@@ -1,0 +1,6 @@
+bruce-firmware/
+dist/
+.pio/
+*.bin
+*.elf
+*.map

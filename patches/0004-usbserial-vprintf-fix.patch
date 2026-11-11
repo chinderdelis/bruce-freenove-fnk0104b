@@ -1,0 +1,23 @@
+From 2e68731f6100a0e34db16cf4cc8b292402fbd6e8 Mon Sep 17 00:00:00 2001
+From: chinderdelis <62119203+chinderdelis@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 18:54:08 +0100
+Subject: [PATCH] fix(serial): forward va_list to Print::vprintf
+
+USBSerial::vprintf() passed the va_list as a variadic argument to printf(), so formatted CLI output printed memory addresses instead of values. Forward it to vprintf().
+---
+ src/core/USBSerial/USBSerial.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/USBSerial/USBSerial.h b/src/core/USBSerial/USBSerial.h
+index 81083aa3..9ec5df41 100644
+--- a/src/core/USBSerial/USBSerial.h
++++ b/src/core/USBSerial/USBSerial.h
+@@ -9,7 +9,7 @@ public:
+     size_t println(const String &s) override { return out->println(s); }
+     size_t print(const String &s) override { return out->print(s); }
+     size_t print(const int n, int format) override { return out->print(n, format); }
+-    void vprintf(const char *fmt, va_list args) override { out->printf(fmt, args); }
++    void vprintf(const char *fmt, va_list args) override { out->vprintf(fmt, args); }
+     size_t println() override { return out->println(); }
+     size_t println(size_t n) override { return out->println(n); }
+     size_t println(const uint32_t n) override { return out->println(n); }

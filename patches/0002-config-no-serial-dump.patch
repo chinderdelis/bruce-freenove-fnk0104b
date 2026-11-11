@@ -1,0 +1,44 @@
+From 14e9804c754b2b95b2f9cee3c67a35cfe4609ba5 Mon Sep 17 00:00:00 2001
+From: chinderdelis <62119203+chinderdelis@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 18:54:08 +0100
+Subject: [PATCH] fix(config): don't dump config JSON to USB serial on save
+
+serializeJsonPretty() wrote the whole config to Serial on every save. With nothing draining the USB-CDC endpoint, HWCDC::write() times out (100 ms x 20) and the loop task stalls, freezing the UI. Remove the debug dumps from saveFile(), loadFile() and createFile(); the explicit settings CLI dump is kept.
+---
+ src/core/config.cpp     | 1 -
+ src/core/configPins.cpp | 3 ---
+ 2 files changed, 4 deletions(-)
+
+diff --git a/src/core/config.cpp b/src/core/config.cpp
+index e7ceca14..860160d4 100644
+--- a/src/core/config.cpp
++++ b/src/core/config.cpp
+@@ -456,7 +456,6 @@ void BruceConfig::saveFile() {
+     };
+ 
+     // Serialize JSON to file
+-    serializeJsonPretty(jsonDoc, Serial);
+     if (serializeJsonPretty(jsonDoc, file) < 5) log_e("Failed to write config file");
+     else log_i("config file written successfully");
+ 
+diff --git a/src/core/configPins.cpp b/src/core/configPins.cpp
+index 57364105..b100b9e4 100644
+--- a/src/core/configPins.cpp
++++ b/src/core/configPins.cpp
+@@ -349,8 +349,6 @@ void BruceConfigPins::loadFile(JsonDocument &jsonDoc, bool checkFS) {
+         return;
+     }
+     file.close();
+-
+-    serializeJsonPretty(jsonDoc, Serial);
+ }
+ 
+ void BruceConfigPins::fromFile(bool checkFS) {
+@@ -364,7 +362,6 @@ void BruceConfigPins::fromFile(bool checkFS) {
+ void BruceConfigPins::createFile() {
+     JsonDocument jsonDoc;
+     toJson(jsonDoc.to<JsonObject>());
+-    serializeJsonPretty(jsonDoc, Serial);
+ 
+     // Open file for writing
+     FS *fs = &LittleFS;

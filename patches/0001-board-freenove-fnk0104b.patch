@@ -1,0 +1,267 @@
+From 293c6cff46f2efc5a79f72ca7cd4cf8702a76255 Mon Sep 17 00:00:00 2001
+From: chinderdelis <62119203+chinderdelis@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 18:54:08 +0100
+Subject: [PATCH] feat(board): add Freenove FNK0104AB support
+
+Hardware-validated fixes: RGB LED on GPIO42 (40 is SD CMD), battery divider on GPIO9, 4-bit SDMMC (opt-in via SD_MMC_4BIT), shared touch/codec I2C marked as sys_i2c, single LEDC backlight attach, real backlight off in powerOff(), no FT6X36 reset on every read, brightness clamped to >=1, and the board added to PR_check CI.
+---
+ .github/workflows/PR_check.yml                |  5 +++
+ .../Freenove-FNK0104AB/Freenove-FNK0104AB.ini |  7 ++--
+ boards/Freenove-FNK0104AB/connections.md      |  4 +-
+ boards/Freenove-FNK0104AB/interface.cpp       | 42 +++++++++++++++----
+ src/core/sd_functions.cpp                     |  8 +++-
+ src/core/settings.cpp                         | 18 ++++++--
+ src/hal/inputs/touch.cpp                      |  8 ++--
+ 7 files changed, 72 insertions(+), 20 deletions(-)
+
+diff --git a/.github/workflows/PR_check.yml b/.github/workflows/PR_check.yml
+index 9a87584f..139a4b59 100644
+--- a/.github/workflows/PR_check.yml
++++ b/.github/workflows/PR_check.yml
+@@ -47,6 +47,11 @@ jobs:
+               env: "esp32-s3-devkitc-1",
+               partitions: { bootloader_addr: "0x0" },
+             }
++          - {
++              name: "ESP32-S3 - Freenove FNK0104AB",
++              env: "Freenove-FNK0104AB",
++              partitions: { bootloader_addr: "0x0" },
++            }
+           - {
+               name: "CoreS3",
+               env: "m5stack-cores3",
+diff --git a/boards/Freenove-FNK0104AB/Freenove-FNK0104AB.ini b/boards/Freenove-FNK0104AB/Freenove-FNK0104AB.ini
+index 324d37cb..2fdfc6b1 100644
+--- a/boards/Freenove-FNK0104AB/Freenove-FNK0104AB.ini
++++ b/boards/Freenove-FNK0104AB/Freenove-FNK0104AB.ini
+@@ -99,14 +99,15 @@ build_flags =
+ 
+ 	-DDEVICE_NAME='"Freenove FNK0104AB"'
+ 
+-	; SD Card via SDIO (not SPI)
++	; SD Card via SDIO (not SPI) — 4-bit mode (SD_MMC_4BIT)
+ 	-DUSE_SD_MMC=1
++	-DSD_MMC_4BIT=1
+ 	-DROTATION=1
+ 
+ 	; =============================================
+ 	; RGB LED (WS2812 NeoPixel)
+ 	; =============================================
+-	-DRGB_LED=40
++	-DRGB_LED=42
+ 	-DLED_TYPE=WS2812B
+ 	-DLED_ORDER=GRB
+ 	-DLED_COUNT=1
+@@ -124,7 +125,7 @@ build_flags =
+ 	; =============================================
+ 	; Battery ADC
+ 	; =============================================
+-	-DANALOG_BAT_PIN=8
++	-DANALOG_BAT_PIN=9
+ 	-DANALOG_BAT_MULTIPLIER=2.0f
+ 	-DANALOG_BAT_MIN_MV=2500
+ 	-DANALOG_BAT_MAX_MV=4200
+diff --git a/boards/Freenove-FNK0104AB/connections.md b/boards/Freenove-FNK0104AB/connections.md
+index cf468256..c4f3bb26 100644
+--- a/boards/Freenove-FNK0104AB/connections.md
++++ b/boards/Freenove-FNK0104AB/connections.md
+@@ -12,9 +12,9 @@ radios/modules.
+ | Display (ILI9341, SPI) | SCLK 12, MOSI 11, MISO 13, CS 10, DC 46, RST board-reset, BL 45 |
+ | Touch (FT6336, I2C @0x38) | SDA 16, SCL 15, INT 17, RST 18 |
+ | SD card | on-board slot (SDMMC) — just insert a microSD |
+-| RGB LED (WS2812) | 40 |
++| RGB LED (WS2812) | 42 |
+ | Button (Select) | 0 (BOOT) |
+-| Battery ADC | 8 (x2 divider) |
++| Battery ADC | 9 (x2 divider) |
+ 
+ ## Free GPIOs (broken-out headers)
+ 
+diff --git a/boards/Freenove-FNK0104AB/interface.cpp b/boards/Freenove-FNK0104AB/interface.cpp
+index 9ae880b8..2d2dda06 100644
+--- a/boards/Freenove-FNK0104AB/interface.cpp
++++ b/boards/Freenove-FNK0104AB/interface.cpp
+@@ -13,6 +13,7 @@
+  *   - BOOT button (GPIO0)
+  */
+ 
++#include "core/bus_HAL.h"
+ #include "core/powerSave.h"
+ #include "core/utils.h"
+ #include "hal/bright/bright.h"
+@@ -33,6 +34,9 @@
+ #define PIN_SD_CLK 38
+ #define PIN_SD_CMD 40
+ #define PIN_SD_D0 39
++#define PIN_SD_D1 41
++#define PIN_SD_D2 48
++#define PIN_SD_D3 47
+ #endif
+ 
+ // =============================================
+@@ -84,6 +88,11 @@ void _setup_gpio() {
+     // ES8311 ADC: clocked off the speaker BCLK, and its LRCLK doubles as the mic WS
+     // clk,data,ws,type
+     bruceConfigPins.mic_bus = {(gpio_num_t)5, (gpio_num_t)6, (gpio_num_t)7, MIC_TYPE_I2S_MSB};
++    // Touch (FT6336G) and the ES8311 codec share this bus. Marking it as sys_i2c
++    // makes bus_HAL treat it as the shared system bus: releaseI2CBus() then won't
++    // Wire.end() it (which silently killed touch until reboot) and the wedged-bus
++    // watchdog in checkAndRecoverSysI2CBus() becomes active.
++    bruceConfigPins.sys_i2c = {(gpio_num_t)16, (gpio_num_t)15}; // sda, scl
+     bruceConfigPins.i2c_bus = {(gpio_num_t)16, (gpio_num_t)15}; // sda, scl (Grove)
+     bruceConfigPins.rfTx = 16;
+     bruceConfigPins.rfRx = 15;
+@@ -110,10 +119,13 @@ void _setup_gpio() {
+ #endif
+ 
+ #ifdef USE_SD_MMC
+-    // ---- SD Card (SDIO mode, 1-bit) ----
+-    SD.setPins(PIN_SD_CLK, PIN_SD_CMD, PIN_SD_D0);
++    // ---- SD Card (SDIO mode, 4-bit) ----
++    SD.setPins(PIN_SD_CLK, PIN_SD_CMD, PIN_SD_D0, PIN_SD_D1, PIN_SD_D2, PIN_SD_D3);
+ #endif
+ 
++    // Initialize I2C bus (shared with audio codec ES8311)
++    setSysI2CBus(&Wire);
++
+     // ---- Touch Screen Init (FT6336G) ----
+     if (!hal_touch_init(touchCfg(), FNK0104AB_TOUCH_ADDR)) { Serial.println("Touch IC not Started"); }
+ 
+@@ -128,14 +140,24 @@ void _setup_gpio() {
+     Serial.begin(115200);
+ }
+ 
++/***************************************************************************************
++** Function name: _pre_storage_gpio()
++** Description:   runs right after the first TFT use (tft.init sets TFT_BL as
++**                output) and before begin_tft() calls setBrightness() for the
++**                first time. Attaching the backlight PWM here exactly once
++**                avoids the LEDC "pin already attached"/"no free timers" errors
++**                caused by attaching again in _post_setup_gpio().
++***************************************************************************************/
++void _pre_storage_gpio() { hal_bright_attach(TFT_BL); }
++
+ /***************************************************************************************
+ ** Function name: _post_setup_gpio()
+ ** Description:   second stage gpio setup after TFT is initialized
+ ***************************************************************************************/
+ void _post_setup_gpio() {
+-    // Backlight control via PWM (must be after TFT init)
+-    hal_bright_attach(TFT_BL);
+-    hal_bright_set(TFT_BL, 100); // Full brightness initially
++    // PWM channel is attached in _pre_storage_gpio(), just make sure the panel
++    // does not stay dark until the stored brightness is re-applied by setup().
++    hal_bright_set(TFT_BL, 100);
+ }
+ 
+ /*********************************************************************
+@@ -177,11 +199,15 @@ void InputHandler(void) {
+ ** Turns off the device (deep sleep with BOOT button wakeup)
+ **********************************************************************/
+ void powerOff() {
+-    // Turn off backlight
+-    hal_bright_set(TFT_BL, 0);
++    // hal_bright_set(0) only goes down to HalBrightCurve::pwm_min, so drive the
++    // pin statically to the "off" level to actually extinguish the backlight.
++    ledcDetach(TFT_BL);
++    pinMode(TFT_BL, OUTPUT);
++    digitalWrite(TFT_BL, TFT_BACKLIGHT_ON == HIGH ? LOW : HIGH);
+     // Turn off amplifier
+     digitalWrite(FNK0104AB_AMP_EN, HIGH);
+-    // Send display to sleep
++    // Display off, then sleep in
++    tft.writecommand(0x28); // DISPOFF
+     tft.writecommand(0x10); // SLPIN
+     // Wake on BOOT button press
+     esp_sleep_enable_ext0_wakeup((gpio_num_t)FNK0104AB_BTN_PIN, FNK0104AB_BTN_ACT);
+diff --git a/src/core/sd_functions.cpp b/src/core/sd_functions.cpp
+index 054b6298..0f78cac8 100644
+--- a/src/core/sd_functions.cpp
++++ b/src/core/sd_functions.cpp
+@@ -60,7 +60,13 @@ bool setupSdCard(uint8_t maxFiles) {
+     if (sdcardMounted) return true;
+     bool result = true;
+ #ifdef USE_SD_MMC
+-    if (!SD.begin("/sdcard", true, false, BOARD_MAX_SDMMC_FREQ, maxFiles)) {
++    // 4-bit SDIO is opt-in per board (define SD_MMC_4BIT); everything else uses 1-bit.
++#ifdef SD_MMC_4BIT
++    constexpr bool sdmmc1Bit = false;
++#else
++    constexpr bool sdmmc1Bit = true;
++#endif
++    if (!SD.begin("/sdcard", sdmmc1Bit, false, BOARD_MAX_SDMMC_FREQ, maxFiles)) {
+         sdcardMounted = false;
+         result = false;
+     }
+diff --git a/src/core/settings.cpp b/src/core/settings.cpp
+index df8bbcb6..333b13eb 100644
+--- a/src/core/settings.cpp
++++ b/src/core/settings.cpp
+@@ -117,10 +117,21 @@ int gsetRotation(bool set) {
+ void setBrightnessMenu() {
+     returnToMenu = false;
+ 
++    // The slider sits in the middle of the screen, i.e. inside the touch zone
++    // that touchHeatMap() maps to SelPress. Without this, grabbing the knob
++    // would set SelPress and the loop would immediately apply + exit. Disable
++    // body-zone reading while this menu is open (footer zones still work), same
++    // as loopOptions() does for tap-to-select menus.
++    bool prevTouchZoneOutsideFooterEnabled = touchZoneOutsideFooterEnabled;
++    touchZoneOutsideFooterEnabled = false;
++
+     int original = bruceConfig.bright;
+     int val = (bruceConfig.bright / 5) * 5;
+     if (val > 100) val = 100;
+-    if (val < 0) val = 0;
++    // Never let the slider reach 0: a saved 0 leaves the screen (almost) dark
++    // with no visible UI to raise it again, which looks like a freeze. The
++    // serial CLI already clamps the same way.
++    if (val < 1) val = 1;
+ 
+     const int lineHeight = FM * LH;
+     const int hintHeight = FP * LH;
+@@ -195,7 +206,7 @@ void setBrightnessMenu() {
+                 int newVal = ((clampedX - trackX) * 100 + trackW / 2) / trackW;
+                 newVal = (newVal / 5) * 5;
+                 if (newVal > 100) newVal = 100;
+-                if (newVal < 0) newVal = 0;
++                if (newVal < 1) newVal = 1;
+                 if (newVal != val) {
+                     val = newVal;
+                     redraw = true;
+@@ -211,7 +222,7 @@ void setBrightnessMenu() {
+         }
+         if (check(PrevPress)) {
+             val -= 5;
+-            if (val < 0) val = 0;
++            if (val < 1) val = 1;
+             redraw = true;
+         }
+         if (check(SelPress)) {
+@@ -224,6 +235,7 @@ void setBrightnessMenu() {
+         }
+         vTaskDelay(pdMS_TO_TICKS(1));
+     }
++    touchZoneOutsideFooterEnabled = prevTouchZoneOutsideFooterEnabled;
+     tft.fillScreen(bruceConfig.bgColor);
+ }
+ 
+diff --git a/src/hal/inputs/touch.cpp b/src/hal/inputs/touch.cpp
+index a30ee850..5aa6f5b6 100644
+--- a/src/hal/inputs/touch.cpp
++++ b/src/hal/inputs/touch.cpp
+@@ -242,9 +242,11 @@ bool hal_touch_read(const DeviceTouch &cfg, BruceTouchPoint &out) {
+     out.x = x;
+     out.y = y;
+     out.pressed = true;
+-#if !defined(TOUCH_CTRL_XPT2046)
+-    touch.reset();
+-#endif
++    // Do NOT touch.reset() here: for FT6X36 it toggles the hardware RST pin
++    // (30 ms low + 160 ms release) on every read. That makes dragging ~190 ms
++    // per sample and, under sustained polling, can leave the controller wedged
++    // (touch stops responding while the rest of the firmware keeps running).
++    // Reading FT6X36_REG_STATUS already clears the interrupt/point latch.
+     return true;
+ #elif defined(TOUCH_CTRL_GT911) || defined(TOUCH_CTRL_CST8XX) || defined(TOUCH_CTRL_GT9895) ||               \
+     defined(TOUCH_CTRL_HI8561)

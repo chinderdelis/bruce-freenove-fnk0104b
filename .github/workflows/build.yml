@@ -1,0 +1,44 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  freenove-fnk0104ab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            bruce-firmware/.pio
+          key: pio-${{ runner.os }}-${{ hashFiles('upstream.lock', 'patches/*.patch') }}
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Bootstrap upstream + patches
+        run: ./scripts/bootstrap.sh
+
+      - name: Build
+        run: ./scripts/build.sh
+
+      - name: Checksums
+        run: cd dist && sha256sum Bruce-Freenove-FNK0104AB.bin > SHA256SUMS
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bruce-Freenove-FNK0104AB
+          path: |
+            dist/Bruce-Freenove-FNK0104AB.bin
+            dist/SHA256SUMS

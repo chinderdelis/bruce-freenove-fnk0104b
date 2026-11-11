@@ -20,7 +20,6 @@ jobs:
         with:
           path: |
             ~/.platformio
-            bruce-firmware/.pio
           key: pio-${{ runner.os }}-${{ hashFiles('upstream.lock', 'patches/*.patch') }}
 
       - name: Install PlatformIO

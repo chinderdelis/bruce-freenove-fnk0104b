@@ -12,6 +12,12 @@ if [ -z "$COMMIT" ]; then
     exit 1
 fi
 
+if [ -e "$WORKDIR" ] && [ ! -d "$WORKDIR/.git" ]; then
+    echo "ERROR: $WORKDIR exists but is not a git repository." >&2
+    echo "Remove it or pass a different work directory." >&2
+    exit 1
+fi
+
 if [ ! -d "$WORKDIR/.git" ]; then
     git clone --recursive "$REPO_URL" "$WORKDIR"
 fi

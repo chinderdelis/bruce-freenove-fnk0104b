@@ -3,7 +3,7 @@
 Test environment:
 
 - Date: 2026-11-11
-- Base: Bruce `dev` @ `22e72a1ba812ab19c9e1fc63dd1cbf467780d576` + the patches in this repository
+- Base: Bruce `dev` @ `4f434aee38cbc90c022eaac376c4bf286a2e6be2` + the patches in this repository
 - Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM)
 
 ## Working

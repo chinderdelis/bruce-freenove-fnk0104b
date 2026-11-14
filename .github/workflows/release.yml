@@ -1,0 +1,178 @@
+name: release
+
+permissions:
+  contents: read
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.1.1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build and verify only; do not create a release'
+        required: false
+        type: boolean
+        default: true
+      force:
+        description: 'Overwrite an already published release'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      commit: ${{ steps.meta.outputs.commit }}
+    steps:
+      - name: Validate tag
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid semver tag: $TAG"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
+            echo "::error::Tag mismatch: $GITHUB_REF_NAME != $TAG"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Capture commit
+        id: meta
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('upstream.lock', 'patches/*.patch', 'requirements.txt') }}
+
+      - name: Install PlatformIO
+        run: pip install -r requirements.txt
+
+      - name: Bootstrap upstream + patches
+        run: ./scripts/bootstrap.sh
+
+      - name: Build
+        run: ./scripts/build.sh
+
+      - name: Verify checksums
+        run: cd dist && sha256sum -c SHA256SUMS
+
+      - name: Generate release notes
+        run: ./scripts/release-notes.sh "$TAG" > dist/RELEASE_NOTES.md
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/Bruce-Freenove-FNK0104AB.bin
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bruce-Freenove-FNK0104AB
+          path: |
+            dist/Bruce-Freenove-FNK0104AB.bin
+            dist/SHA256SUMS
+            dist/RELEASE_NOTES.md
+          retention-days: 14
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Bruce-Freenove-FNK0104AB
+          path: dist
+
+      - name: Verify checksums
+        run: cd dist && sha256sum -c SHA256SUMS
+
+      - name: Verify attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh attestation verify dist/Bruce-Freenove-FNK0104AB.bin --repo "$GITHUB_REPOSITORY"
+
+      - name: Create or update release
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd dist
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+            if [ "$is_draft" != "true" ] && [ "${{ inputs.force || false }}" != "true" ]; then
+              echo "::error::Release $TAG is already published; refusing to overwrite (set force=true to clobber)."
+              exit 1
+            fi
+            gh release upload "$TAG" Bruce-Freenove-FNK0104AB.bin SHA256SUMS RELEASE_NOTES.md --clobber
+            gh release edit "$TAG" \
+              --title "$TAG — Freenove FNK0104B (FNK0104AB)" \
+              --notes-file RELEASE_NOTES.md
+          else
+            gh release create "$TAG" --draft --verify-tag \
+              --title "$TAG — Freenove FNK0104B (FNK0104AB)" \
+              --notes-file RELEASE_NOTES.md \
+              Bruce-Freenove-FNK0104AB.bin SHA256SUMS RELEASE_NOTES.md
+          fi
+
+      - name: Publish release
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pre="false"
+          if [[ "$TAG" == *-* ]]; then pre="true"; fi
+          if [ "$pre" = "true" ]; then
+            gh release edit "$TAG" --prerelease
+          else
+            gh release edit "$TAG" --prerelease=false
+          fi
+          gh release edit "$TAG" --draft=false
+
+      - name: Step summary
+        run: |
+          {
+            echo "## Release ${TAG}"
+            echo ""
+            echo "- Commit: ${{ needs.build.outputs.commit }}"
+            echo "- Artifact: Bruce-Freenove-FNK0104AB.bin"
+            echo "- SHA256: $(sha256sum dist/Bruce-Freenove-FNK0104AB.bin | cut -d' ' -f1)"
+            echo "- Dry run: ${{ inputs.dry_run || false }}"
+            echo "- Prerelease: $([[ "$TAG" == *-* ]] && echo true || echo false)"
+          } >> "$GITHUB_STEP_SUMMARY"

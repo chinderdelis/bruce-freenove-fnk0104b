@@ -1,15 +1,22 @@
 name: build
 
+permissions:
+  contents: read
+
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
 jobs:
   freenove-fnk0104ab:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -20,10 +27,10 @@ jobs:
         with:
           path: |
             ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('upstream.lock', 'patches/*.patch') }}
+          key: pio-${{ runner.os }}-${{ hashFiles('upstream.lock', 'patches/*.patch', 'requirements.txt') }}
 
       - name: Install PlatformIO
-        run: pip install platformio
+        run: pip install -r requirements.txt
 
       - name: Bootstrap upstream + patches
         run: ./scripts/bootstrap.sh
@@ -31,8 +38,8 @@ jobs:
       - name: Build
         run: ./scripts/build.sh
 
-      - name: Checksums
-        run: cd dist && sha256sum Bruce-Freenove-FNK0104AB.bin > SHA256SUMS
+      - name: Verify checksums
+        run: cd dist && sha256sum -c SHA256SUMS
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -41,3 +48,4 @@ jobs:
           path: |
             dist/Bruce-Freenove-FNK0104AB.bin
             dist/SHA256SUMS
+          retention-days: 14

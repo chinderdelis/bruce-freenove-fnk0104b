@@ -12,5 +12,7 @@ BIN="$REPO/Bruce-$ENV.bin"
 if [ -f "$BIN" ]; then
     mkdir -p "$ROOT/dist"
     cp "$BIN" "$ROOT/dist/"
+    (cd "$ROOT/dist" && sha256sum "$(basename "$BIN")" > SHA256SUMS)
     echo "artifact: $ROOT/dist/$(basename "$BIN")"
+    echo "checksum: $ROOT/dist/SHA256SUMS"
 fi

@@ -1,5 +1,8 @@
 # Bruce for Freenove FNK0104B (FNK0104AB)
 
+[![Build](https://github.com/chinderdelis/bruce-freenove-fnk0104b/actions/workflows/build.yml/badge.svg)](https://github.com/chinderdelis/bruce-freenove-fnk0104b/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/chinderdelis/bruce-freenove-fnk0104b)](https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases)
+
 Community board support for running [Bruce](https://github.com/BruceDevices/firmware)
 on the **Freenove FNK0104B** 2.8" ESP32-S3 display module (also sold/labelled as
 **FNK0104AB**).
@@ -11,8 +14,8 @@ This repository contains:
 - **build/flash scripts**;
 - **prebuilt firmware** in the [Releases](../../releases) section.
 
-Upstream base: Bruce `dev` @ `22e72a1ba812ab19c9e1fc63dd1cbf467780d576`
-(2026-11-08), environment `Freenove-FNK0104AB`.
+Upstream base: Bruce `dev` @ `4f434aee38cbc90c022eaac376c4bf286a2e6be2`
+(2026-11-14, includes 1.17 and the merged #3082), environment `Freenove-FNK0104AB`.
 
 > This is an unofficial community project, not affiliated with Freenove.
 > Bruce is licensed AGPL-3.0; see [`NOTICE.md`](NOTICE.md) and [`LICENSE`](LICENSE).
@@ -62,6 +65,13 @@ esptool.py --chip esp32s3 --port /dev/ttyACM0 --baud 921600 \
   write_flash 0x0 Bruce-Freenove-FNK0104AB.bin
 ```
 
+Verify before flashing:
+
+```bash
+sha256sum -c SHA256SUMS
+gh attestation verify Bruce-Freenove-FNK0104AB.bin --repo chinderdelis/bruce-freenove-fnk0104b
+```
+
 If the port is not detected, put the board in download mode: hold **BOOT**,
 tap **RESET**, release **BOOT**. See [`docs/flashing.md`](docs/flashing.md).
 
@@ -89,6 +99,10 @@ Useful environment variables:
 | `BAUD` | `921600` | Flash baud rate |
 | `PIO` | `pio` | PlatformIO executable |
 | `ESPTOOL` | `esptool.py` | esptool executable |
+
+## Release process
+
+See [`docs/releasing.md`](docs/releasing.md).
 
 ## Pinout (summary)
 

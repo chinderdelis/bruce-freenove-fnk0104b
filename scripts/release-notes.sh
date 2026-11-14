@@ -46,8 +46,12 @@ if [ -z "$(printf '%s' "$section" | tr -d '[:space:]')" ] && [[ "$TAG" == *-* ]]
 fi
 
 if [ -z "$(printf '%s' "$section" | tr -d '[:space:]')" ]; then
-  echo "ERROR: no changelog section found for $TAG (or Unreleased) in $CHANGELOG" >&2
-  exit 1
+  if [ "${ALLOW_MISSING:-false}" = "true" ] || [ "${ALLOW_MISSING:-0}" = "1" ]; then
+    section="No changelog entry for this tag yet."
+  else
+    echo "ERROR: no changelog section found for $TAG (or Unreleased) in $CHANGELOG" >&2
+    exit 1
+  fi
 fi
 
 cat <<NOTES

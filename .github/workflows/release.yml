@@ -87,6 +87,8 @@ jobs:
         run: cd dist && sha256sum -c SHA256SUMS
 
       - name: Generate release notes
+        env:
+          ALLOW_MISSING: ${{ startsWith(env.TAG, 'v0.0.0-') }}
         run: ./scripts/release-notes.sh "$TAG" > dist/RELEASE_NOTES.md
 
       - name: Attest build provenance

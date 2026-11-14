@@ -6,7 +6,8 @@ Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM).
 
 Environment: `Freenove-FNK0104AB` built from a clean upstream checkout plus the
 patches in this repository; binary flashed on hardware and checked over the
-serial CLI.
+serial CLI. On 2026-11-14 the WiFi AP/WebUI and BLE iBeacon paths were also
+executed on this build.
 
 | Feature | What was checked |
 | --- | --- |
@@ -19,9 +20,16 @@ serial CLI.
 | I2C bus | `i2c` finds `0x18` (ES8311 codec) and `0x38` (FT6336G touch) |
 | Serial CLI | `help`, `battery`, `ls`, `i2c`, `tone`, `led`, `settings` |
 | Config save | `settings bright 100` produces no JSON dump (freeze fix) |
+| WiFi AP | `wifi on` starts `BruceNet` (WPA2); host connects and pings `172.0.0.1` |
+| WebUI | Login `admin`/`bruce`; `/systeminfo`, `/listfiles` (LittleFS + SD) and `/getscreen` answer over HTTP |
+| BLE | iBeacon advertising verified on a BlueZ host via D-Bus `ManufacturerData`: UUID `e4c159a0-8c82-11e6-bdf4-0800200c9a66`, major 5, minor 88, company `0x004C` |
 
-Not re-tested on this base (validated on v0.1.0): microphone, WiFi AP, WebUI,
-File Manager, BLE, deep sleep, HID/BadUSB, BLE keyboard.
+BLE note: iBeacon advertising works after a clean boot; starting it a second
+time without resetting hit `[RAM] Low contiguous DMA memory for BLE` (`Still
+only 31732 bytes DMA block, minimum 49152 needed`) and needs a reboot.
+
+Not re-tested on this base (validated on v0.1.0): microphone, File Manager,
+deep sleep, HID/BadUSB, BLE keyboard.
 
 ## v0.1.0 — Bruce `dev` @ `22e72a1b` (2026-11-11)
 

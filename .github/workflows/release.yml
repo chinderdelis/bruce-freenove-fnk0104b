@@ -113,6 +113,8 @@ jobs:
     environment: release
     permissions:
       contents: write
+    env:
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -135,18 +137,19 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            is_draft="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)"
             if [ "$is_draft" != "true" ] && [ "${{ inputs.force || false }}" != "true" ]; then
               echo "::error::Release $TAG is already published; refusing to overwrite (set force=true to clobber)."
               exit 1
             fi
-            gh release upload "$TAG" Bruce-Freenove-FNK0104AB.bin SHA256SUMS RELEASE_NOTES.md --clobber
-            gh release edit "$TAG" \
+            gh release upload "$TAG" Bruce-Freenove-FNK0104AB.bin SHA256SUMS RELEASE_NOTES.md --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" \
               --title "$TAG — Freenove FNK0104B (FNK0104AB)" \
               --notes-file RELEASE_NOTES.md
           else
-            gh release create "$TAG" --draft --verify-tag \
+            gh release create "$TAG" --draft \
+              --repo "$GITHUB_REPOSITORY" \
               --title "$TAG — Freenove FNK0104B (FNK0104AB)" \
               --notes-file RELEASE_NOTES.md \
               Bruce-Freenove-FNK0104AB.bin SHA256SUMS RELEASE_NOTES.md
@@ -161,11 +164,11 @@ jobs:
           pre="false"
           if [[ "$TAG" == *-* ]]; then pre="true"; fi
           if [ "$pre" = "true" ]; then
-            gh release edit "$TAG" --prerelease
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease
           else
-            gh release edit "$TAG" --prerelease=false
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease=false
           fi
-          gh release edit "$TAG" --draft=false
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
 
       - name: Step summary
         run: |

@@ -1,12 +1,29 @@
 # Tested features
 
-Test environment:
+Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM).
 
-- Date: 2026-11-11
-- Base: Bruce `dev` @ `4f434aee38cbc90c022eaac376c4bf286a2e6be2` + the patches in this repository
-- Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM)
+## v0.1.1 — Bruce `dev` @ `4f434aee` (2026-11-14)
 
-## Working
+Environment: `Freenove-FNK0104AB` built from a clean upstream checkout plus the
+patches in this repository; binary flashed on hardware and checked over the
+serial CLI.
+
+| Feature | What was checked |
+| --- | --- |
+| Display | Boots to the main menu; confirmed working on hardware |
+| Touch | Taps/drags work; confirmed working on hardware |
+| SD card | `ls` lists the card contents (4-bit SDMMC) |
+| Audio output | `tone 440 500` reports `ES8311 speaker enabled`; sound confirmed |
+| RGB LED | `led rgb 255 0 0` → `FF0000`, `led off` → `000000` |
+| Battery ADC | `[BAT] 95% charging=1 adc=2066mV batt~4132mV` |
+| I2C bus | `i2c` finds `0x18` (ES8311 codec) and `0x38` (FT6336G touch) |
+| Serial CLI | `help`, `battery`, `ls`, `i2c`, `tone`, `led`, `settings` |
+| Config save | `settings bright 100` produces no JSON dump (freeze fix) |
+
+Not re-tested on this base (validated on v0.1.0): microphone, WiFi AP, WebUI,
+File Manager, BLE, deep sleep, HID/BadUSB, BLE keyboard.
+
+## v0.1.0 — Bruce `dev` @ `22e72a1b` (2026-11-11)
 
 | Feature | What was checked |
 | --- | --- |

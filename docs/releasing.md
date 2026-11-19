@@ -8,9 +8,9 @@ Releases are built and published by `.github/workflows/release.yml` on a `v*` ta
 2. Update `CHANGELOG.md` with a `## [vX.Y.Z] - YYYY-MM-DD` section.
 3. Build and flash-test locally (`./scripts/bootstrap.sh && ./scripts/build.sh && ./scripts/flash.sh`).
 4. Open a PR, merge to `main`.
-5. Create a **signed** tag and push it:
+5. Create an **annotated** tag and push it (use `-s` if a GPG key is configured):
    ```bash
-   git tag -s vX.Y.Z -m "vX.Y.Z"
+   git tag -a vX.Y.Z -m "vX.Y.Z"
    git push origin vX.Y.Z
    ```
 6. The `release` workflow builds, attests and publishes the release.

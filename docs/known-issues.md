@@ -2,10 +2,20 @@
 
 ## Upstream patches pending
 
-The board and the three fixes are proposed upstream as pull requests #3070,
-#3071, #3072 and #3073. Until they are merged, you must use the patches or a
-prebuilt release from this repository. Building upstream `dev` alone will not
-have the corrected pins or the fixes.
+The config-dump and battery CLI fixes are merged upstream (#3070, #3072);
+#3071 is closed. The remaining board fixes are proposed in #3073 (board-only)
+and a separate touch/brightness PR. Until they are merged, use the patches or
+a prebuilt release from this repository: building upstream `dev` alone will
+not have the corrected pins, 4-bit SDMMC, FT6X36 read or brightness menu fixes.
+
+## v0.1.2 hardware sanity: SD not re-tested
+
+v0.1.2 was built locally (Freenove plus ES3C28P regression), flashed on the
+Freenove board and sanity-checked (serial CLI, WiFi AP/WebUI, BLE iBeacon).
+No microSD card was inserted during the run, so the SD mount was not
+re-validated; `ls`/`storage list /` only showed LittleFS. The v0.1.1 SD result
+remains the latest hardware validation. See
+[`tested-features.md`](tested-features.md).
 
 ## HID/BadUSB and BLE keyboard are untested
 
@@ -46,9 +56,6 @@ the 4-bit lines are D1=41, D2=48, D3=47.
 
 ## If you build without the patches
 
-Two upstream issues are fixed only by these patches:
-
-- `fix(config)` — saving the config dumps ~1.7 KB of JSON to USB-CDC; with no
-  monitor draining the endpoint the UI can freeze.
-- `fix(serial)` — formatted CLI output can print memory addresses instead of
-  values (e.g. `LED color set to 3FCD8C30`).
+The board pins, 4-bit SDMMC, FT6X36 read and brightness menu fixes are only in
+patch 0001. The config-dump and serial `vprintf` fixes are already upstream
+(#3070 and #3082).

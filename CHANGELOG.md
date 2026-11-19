@@ -16,8 +16,9 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Regenerated patch 0001 for the new base (board, 4-bit SDMMC, FT6X36 read and
   brightness menu fixes), excluding the upstream CI workflow.
 - Built locally (Freenove + ES3C28P regression) and sanity-checked on hardware:
-  serial CLI (`battery`, `led`, `i2c`, `tone`, `settings`), WiFi AP/WebUI and
-  BLE iBeacon. The SD card was not re-tested (no card inserted).
+  serial CLI (`battery`, `led`, `i2c`, `tone`, `settings`), WiFi AP/WebUI,
+  BLE iBeacon, SD mount/list (read-only) and touch/brightness menu. SD
+  write/format paths were not re-tested.
 
 ### Fixed
 - Rebased the board patch onto current `dev` and re-validated it against the

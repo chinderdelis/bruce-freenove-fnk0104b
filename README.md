@@ -37,15 +37,14 @@ See [`docs/hardware.md`](docs/hardware.md) and [`docs/pinout.md`](docs/pinout.md
 ## Status
 
 v0.1.1 and v0.1.2 were validated on real hardware. v0.1.2 was flashed on
-2026-11-19 and sanity-checked over the serial CLI, WiFi AP/WebUI and BLE
-iBeacon. The SD card was not re-tested because no card was inserted; touch and
-the brightness menu use the same code as v0.1.1. Details and test conditions
-are in [`docs/tested-features.md`](docs/tested-features.md).
+2026-11-19 and sanity-checked over the serial CLI, WiFi AP/WebUI, BLE iBeacon,
+SD mount/list (read-only) and the touch/brightness menu. Details and test
+conditions are in [`docs/tested-features.md`](docs/tested-features.md).
 
 | Feature | Status |
 | --- | --- |
 | Display, touch | Working |
-| SD card (4-bit) | Working (v0.1.1); not re-tested in v0.1.2 (no card) |
+| SD card (4-bit) | Working (v0.1.2 read-only mount/list; write not re-tested) |
 | Audio output + microphone | Working |
 | RGB LED (GPIO42) | Working |
 | Battery ADC (GPIO9) | Configured; not yet verified with a real LiPo |

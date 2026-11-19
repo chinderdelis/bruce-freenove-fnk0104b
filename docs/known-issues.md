@@ -8,15 +8,6 @@ and a separate touch/brightness PR. Until they are merged, use the patches or
 a prebuilt release from this repository: building upstream `dev` alone will
 not have the corrected pins, 4-bit SDMMC, FT6X36 read or brightness menu fixes.
 
-## v0.1.2 hardware sanity: SD not re-tested
-
-v0.1.2 was built locally (Freenove plus ES3C28P regression), flashed on the
-Freenove board and sanity-checked (serial CLI, WiFi AP/WebUI, BLE iBeacon).
-No microSD card was inserted during the run, so the SD mount was not
-re-validated; `ls`/`storage list /` only showed LittleFS. The v0.1.1 SD result
-remains the latest hardware validation. See
-[`tested-features.md`](tested-features.md).
-
 ## HID/BadUSB and BLE keyboard are untested
 
 Enabling USB HID re-enumerates the device and can drop the serial console;
@@ -52,7 +43,8 @@ with no visible UI to raise it again. Values 1–100 are allowed.
 
 4-bit SDMMC is enabled for this board (`SD_MMC_4BIT`). Other boards keep 1-bit.
 If you see SD mount failures with a particular card, try a different card first;
-the 4-bit lines are D1=41, D2=48, D3=47.
+the 4-bit lines are D1=41, D2=48, D3=47. v0.1.2 re-validated mount/list
+read-only; write/format paths were not re-tested.
 
 ## If you build without the patches
 

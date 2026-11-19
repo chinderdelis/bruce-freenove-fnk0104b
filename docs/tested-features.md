@@ -24,8 +24,8 @@ tree. Host: Linux/BlueZ, WiFi `wlp2s0b1`, Ethernet kept as the default route.
 | WiFi AP | `wifi on` → `BruceNet`; host `172.0.0.2`, ping `172.0.0.1` PASS |
 | WebUI | login `admin`/`bruce` 302; `/systeminfo`, `/listfiles?fs=LittleFS`, `/getscreen` 200 |
 | BLE iBeacon | BlueZ D-Bus sees UUID `e4c159a0-8c82-11e6-bdf4-0800200c9a66`, major 5, minor 88, tx `0xC5` |
-| SD card | not re-tested in v0.1.2: no card inserted; init reports `0x107`; `ls`/`storage list /` show LittleFS only |
-| Touch / brightness menu | not re-exercised in v0.1.2; same code as v0.1.1/#3073, compile-validated |
+| SD card | PASS (read-only mount/list: card contents listed; no write/format test) |
+| Touch / brightness menu | PASS (touch drag changed the slider; `settings bright` persisted as 40) |
 | HID/BadUSB, BLE keyboard | not tested (unchanged) |
 
 Known upstream CLI quirks still present: `screen brightness` prints

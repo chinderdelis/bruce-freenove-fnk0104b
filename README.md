@@ -14,8 +14,9 @@ This repository contains:
 - **build/flash scripts**;
 - **prebuilt firmware** in the [Releases](../../releases) section.
 
-Upstream base: Bruce `dev` @ `4f434aee38cbc90c022eaac376c4bf286a2e6be2`
-(2026-11-14, includes 1.17 and the merged #3082), environment `Freenove-FNK0104AB`.
+Upstream base: Bruce `dev` @ `fa6bcbf3563adc597b4bef908ae7f8f2d0b405ce`
+(2026-11-17, includes 1.17, #3070/#3072 and the latest BLE/SD/WiFi fixes),
+environment `Freenove-FNK0104AB`.
 
 > This is an unofficial community project, not affiliated with Freenove.
 > Bruce is licensed AGPL-3.0; see [`NOTICE.md`](NOTICE.md) and [`LICENSE`](LICENSE).
@@ -35,12 +36,15 @@ See [`docs/hardware.md`](docs/hardware.md) and [`docs/pinout.md`](docs/pinout.md
 
 ## Status
 
-This build was validated on real hardware. Details and test conditions are in
-[`docs/tested-features.md`](docs/tested-features.md).
+v0.1.1 and v0.1.2 were validated on real hardware. v0.1.2 was flashed on
+2026-11-19 and sanity-checked over the serial CLI, WiFi AP/WebUI, BLE iBeacon,
+SD mount/list (read-only) and the touch/brightness menu. Details and test
+conditions are in [`docs/tested-features.md`](docs/tested-features.md).
 
 | Feature | Status |
 | --- | --- |
-| Display, touch, SD card (4-bit) | Working |
+| Display, touch | Working |
+| SD card (4-bit) | Working (v0.1.2 read-only mount/list; write not re-tested) |
 | Audio output + microphone | Working |
 | RGB LED (GPIO42) | Working |
 | Battery ADC (GPIO9) | Configured; not yet verified with a real LiPo |
@@ -51,8 +55,10 @@ This build was validated on real hardware. Details and test conditions are in
 | HID/BadUSB, BLE keyboard | Not tested |
 | External RF/RFID/IR/FM/GPS modules | Not tested |
 
-The four fixes are proposed upstream as pull requests #3070–#3073. Until they
-are merged, use the patches or the prebuilt release.
+The config-dump and battery-CLI fixes are merged upstream (#3070, #3072);
+#3071 is closed. The board fixes are proposed upstream in #3073 (board-only)
+and a separate touch/brightness PR. Until they are merged, use the patches or
+the prebuilt release.
 
 ## Quick start (prebuilt firmware)
 

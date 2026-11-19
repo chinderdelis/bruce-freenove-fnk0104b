@@ -6,6 +6,24 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v0.1.2] - 2026-11-19
+
+### Changed
+- Updated upstream base to Bruce `dev` @ `fa6bcbf3563adc597b4bef908ae7f8f2d0b405ce`
+  (2026-11-17; includes #3070, #3072 and the latest BLE/SD/WiFi fixes).
+- Dropped patches 0002 and 0003: the config-dump and battery CLI fixes are now
+  upstream.
+- Regenerated patch 0001 for the new base (board, 4-bit SDMMC, FT6X36 read and
+  brightness menu fixes), excluding the upstream CI workflow.
+- Built locally (Freenove + ES3C28P regression) and sanity-checked on hardware:
+  serial CLI (`battery`, `led`, `i2c`, `tone`, `settings`), WiFi AP/WebUI,
+  BLE iBeacon, SD mount/list (read-only) and touch/brightness menu. SD
+  write/format paths were not re-tested.
+
+### Fixed
+- Rebased the board patch onto current `dev` and re-validated it against the
+  locked commit.
+
 ## [v0.1.1] - 2026-11-14
 
 ### Changed
@@ -33,6 +51,7 @@ Initial community build for the Freenove FNK0104B (FNK0104AB), based on Bruce
 
 Upstream pull requests: #3070, #3071, #3072, #3073.
 
-[Unreleased]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/compare/v0.1.2...HEAD
+[v0.1.2]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.0

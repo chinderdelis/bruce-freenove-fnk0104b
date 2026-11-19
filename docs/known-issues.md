@@ -2,10 +2,11 @@
 
 ## Upstream patches pending
 
-The board and the three fixes are proposed upstream as pull requests #3070,
-#3071, #3072 and #3073. Until they are merged, you must use the patches or a
-prebuilt release from this repository. Building upstream `dev` alone will not
-have the corrected pins or the fixes.
+The config-dump and battery CLI fixes are merged upstream (#3070, #3072);
+#3071 is closed. The remaining board fixes are proposed in #3073 (board-only)
+and a separate touch/brightness PR. Until they are merged, use the patches or
+a prebuilt release from this repository: building upstream `dev` alone will
+not have the corrected pins, 4-bit SDMMC, FT6X36 read or brightness menu fixes.
 
 ## HID/BadUSB and BLE keyboard are untested
 
@@ -42,13 +43,11 @@ with no visible UI to raise it again. Values 1–100 are allowed.
 
 4-bit SDMMC is enabled for this board (`SD_MMC_4BIT`). Other boards keep 1-bit.
 If you see SD mount failures with a particular card, try a different card first;
-the 4-bit lines are D1=41, D2=48, D3=47.
+the 4-bit lines are D1=41, D2=48, D3=47. v0.1.2 re-validated mount/list
+read-only; write/format paths were not re-tested.
 
 ## If you build without the patches
 
-Two upstream issues are fixed only by these patches:
-
-- `fix(config)` — saving the config dumps ~1.7 KB of JSON to USB-CDC; with no
-  monitor draining the endpoint the UI can freeze.
-- `fix(serial)` — formatted CLI output can print memory addresses instead of
-  values (e.g. `LED color set to 3FCD8C30`).
+The board pins, 4-bit SDMMC, FT6X36 read and brightness menu fixes are only in
+patch 0001. The config-dump and serial `vprintf` fixes are already upstream
+(#3070 and #3082).

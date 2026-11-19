@@ -2,6 +2,36 @@
 
 Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM).
 
+## v0.1.2 — Bruce `dev` @ `fa6bcbf3` (2026-11-19, hardware sanity)
+
+Environment: `Freenove-FNK0104AB` built from `freenove-combined-v012` (same
+content as a clean `dev` checkout plus patch 0001), flashed with esptool at
+`0x0` on the Freenove board. The ES3C28P regression was built from the same
+tree. Host: Linux/BlueZ, WiFi `wlp2s0b1`, Ethernet kept as the default route.
+
+| Check | Result |
+| --- | --- |
+| Freenove-FNK0104AB build | PASS (local, 4,685,680 bytes) |
+| ES3C28P regression build | PASS (local, 4,685,184 bytes) |
+| Patch 0001 on clean `dev` | applies cleanly |
+| Flash + verify | PASS (esptool, hash verified) |
+| Serial CLI | `help`, `battery`, `led`, `i2c`, `tone`, `settings` PASS |
+| Battery ADC | `[BAT] 96% charging=1 adc=2066mV batt~4132mV` |
+| RGB LED | `led rgb 255 0 0` → `FF0000`; `led off` → `000000` |
+| I2C bus | `i2c` finds `0x18` (ES8311) and `0x38` (FT6336G) |
+| Audio output | `tone 440 500` → `ES8311 speaker enabled/disabled` |
+| Config brightness | `settings bright 100` produces no JSON dump; `settings bright` → `100` |
+| WiFi AP | `wifi on` → `BruceNet`; host `172.0.0.2`, ping `172.0.0.1` PASS |
+| WebUI | login `admin`/`bruce` 302; `/systeminfo`, `/listfiles?fs=LittleFS`, `/getscreen` 200 |
+| BLE iBeacon | BlueZ D-Bus sees UUID `e4c159a0-8c82-11e6-bdf4-0800200c9a66`, major 5, minor 88, tx `0xC5` |
+| SD card | PASS (read-only mount/list: card contents listed; no write/format test) |
+| Touch / brightness menu | PASS (touch drag changed the slider; `settings bright` persisted as 40) |
+| HID/BadUSB, BLE keyboard | not tested (unchanged) |
+
+Known upstream CLI quirks still present: `screen brightness` prints
+"Settings led brightness to X%"; help lists `i2c scan` but the parser accepts
+only `i2c`.
+
 ## v0.1.1 — Bruce `dev` @ `4f434aee` (2026-11-14)
 
 Environment: `Freenove-FNK0104AB` built from a clean upstream checkout plus the

@@ -6,6 +6,19 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v0.1.3] - 2026-11-22
+
+### Changed
+- Updated upstream base to Bruce `dev` @ `b8207a08c1fa6323b4591f39532d28033ac963e9`
+  (2026-11-19; includes the merged #3115 touch/brightness fixes).
+- Regenerated patch 0001 as **board-only**: the FT6X36 read and brightness-menu
+  fixes now come from upstream (#3115), so `settings.cpp` and `touch.cpp` are no
+  longer patched.
+- Bumped `actions/download-artifact` to v8 (#10).
+
+### Fixed
+- Board patch re-validated against the new locked commit.
+
 ## [v0.1.2] - 2026-11-19
 
 ### Changed
@@ -51,7 +64,8 @@ Initial community build for the Freenove FNK0104B (FNK0104AB), based on Bruce
 
 Upstream pull requests: #3070, #3071, #3072, #3073.
 
-[Unreleased]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/compare/v0.1.3...HEAD
+[v0.1.3]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.3
 [v0.1.2]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/chinderdelis/bruce-freenove-fnk0104b/releases/tag/v0.1.0

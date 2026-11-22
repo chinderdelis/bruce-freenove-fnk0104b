@@ -2,6 +2,36 @@
 
 Board: Freenove FNK0104B (ESP32-S3R8, 16 MB flash, 8 MB PSRAM).
 
+## v0.1.3 — Bruce `dev` @ `b8207a08` (2026-11-22, hardware sanity)
+
+Environment: `Freenove-FNK0104AB` built from `release/v0.1.3` (clean
+`dev` @ `b8207a08` plus board-only patch 0001; `settings.cpp`/`touch.cpp` come
+from upstream #3115). The published release artifact was also flashed at `0x0`
+with esptool on the Freenove board.
+
+| Check | Result |
+| --- | --- |
+| Freenove-FNK0104AB build | PASS (local 4,683,984 bytes; release 4,684,064 bytes) |
+| ES3C28P regression build | PASS (4,683,488 bytes) |
+| Patch 0001 on clean `b8207a08` | applies cleanly; board-only |
+| Flash + verify | PASS (esptool, hash verified) |
+| Battery ADC | `[BAT] 98% charging=1 adc=2078mV batt~4156mV` |
+| RGB LED | `led rgb 255 0 0` → `FF0000`; `led off` → `000000` |
+| I2C bus | `i2c` finds `0x18` (ES8311) and `0x38` (FT6336G) |
+| Audio output | `tone 440 500` → `ES8311 speaker enabled/disabled` |
+| Config brightness | `settings bright` → `100` |
+| SD card | PASS (read-only mount/list: card contents listed; no write/format test) |
+| Touch / brightness menu | not repeated on v0.1.3; PASS on v0.1.2 |
+| HID/BadUSB, BLE keyboard | not tested (unchanged) |
+
+Release asset: `Bruce-Freenove-FNK0104AB.bin` (4,684,064 bytes, sha256
+`82a48f5c9e6e236ff7e304ca2c614299f1406d8e6b9d91a6439de59b998038ed`);
+`sha256sum -c` and `gh attestation verify` PASS.
+
+Known upstream CLI quirks remain: `screen brightness` prints
+"Settings led brightness to X%"; help lists `i2c scan` but the parser accepts
+only `i2c`.
+
 ## v0.1.2 — Bruce `dev` @ `fa6bcbf3` (2026-11-19, hardware sanity)
 
 Environment: `Freenove-FNK0104AB` built from `freenove-combined-v012` (same
